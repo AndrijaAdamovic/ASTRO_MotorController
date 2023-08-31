@@ -8,7 +8,6 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/JointState.h>
 #include <Adafruit_INA260.h>
-#include <std_msgs/Int64MultiArray.h>
 
 #define ENC1_A 23
 #define ENC1_B 22
@@ -36,7 +35,7 @@
 
 #define ODOM_INTERVAL_MS 10
 
-#define CMD_VEL_TIMEOUT_MS 1000
+#define CMD_VEL_TIMEOUT_MS 500
 
 #define pi 3.14159265
 
@@ -75,7 +74,6 @@ PID mPID2(&currentRPM2, &outPWM2, &targetRPM2, Kp, Ki, Kd, DIRECT);
 ros::NodeHandle nh;
 nav_msgs::Odometry odom_msg;
 sensor_msgs::JointState jstate;
-std_msgs::Int64MultiArray ticks_msg;
 
 char *joint_name[] = {"left_wheel_joint", "right_wheel_joint"};
 float vel[]={0,0};
@@ -101,7 +99,6 @@ void messageCb(const geometry_msgs::Twist& msg)
 ros::Subscriber<geometry_msgs::Twist> vel_sub("cmd_vel", &messageCb);
 ros::Publisher odom_pub("odom", &odom_msg);
 ros::Publisher js_pub("joint_states", &jstate);
-ros::Publisher ticks_pub("ticks", &ticks_msg);
 tf::TransformBroadcaster odom_broadcaster;
 
 
@@ -267,7 +264,7 @@ void setup() {
   odom_broadcaster.init(nh);
   nh.advertise(odom_pub);
   nh.advertise(js_pub);
-  nh.advertise(ticks_pub);
+
 }
 
 void motorDriveRPM(double rpm1, double rpm2)
@@ -371,25 +368,6 @@ void odometry_and_jstates()
   }  
 }
 
-
-int64_t values[] = {0, 0};
-void publishEncoderTicks()
-{
-  if(millis() - lastMsOdom >= ODOM_INTERVAL_MS)
-  {
-    values[0] -= 1;
-    values[1] = (int32_t)encCnt[1];
-
-    ticks_msg.data_length = 2;
-    ticks_msg.data = values;
-
-    // ticks_msg.data[0] = encCnt[0];
-    // ticks_msg.data[1] = encCnt[1];
-
-    ticks_pub.publish(&ticks_msg);
-    lastMsOdom = millis();
-  }
-}
 
 void loop() 
 {
